@@ -61,11 +61,11 @@ encodeArray = unsafeCoerce
 encodeArrayBuffer :: ArrayBuffer -> Foreign
 encodeArrayBuffer = unsafeCoerce
 
-type PublicKeyCredential a = {
-  id :: String,
-  rawId :: ArrayBuffer,
-  response :: a
-}
+type PublicKeyCredential a =
+  { id :: String
+  , rawId :: ArrayBuffer
+  , response :: a
+  }
 
 data PublicKeyAlgorithm
   = ECDSA_WITH_SHA256
@@ -78,18 +78,18 @@ encodeAlg = encodeInt <<< case _ of
   RSA_WITH_SHA256 -> -257
   OtherAlg x -> x
 
-type RelyingParty = {
-  icon :: Maybe String,
-  id :: Maybe String,
-  name :: String
-}
+type RelyingParty =
+  { icon :: Maybe String
+  , id :: Maybe String
+  , name :: String
+  }
 
-type User = {
-  icon :: Maybe String,
-  displayName :: String,
-  id :: ArrayBuffer,
-  name :: String
-}
+type User =
+  { icon :: Maybe String
+  , displayName :: String
+  , id :: ArrayBuffer
+  , name :: String
+  }
 
 data Transport
   = USB
@@ -123,18 +123,19 @@ encodeAttestation = encodeString <<< case _ of
   INDIRECT -> "indirect"
   DIRECT -> "direct"
 
-type CredentialDescriptor = {
-  id :: ArrayBuffer,
-  transports :: Maybe (Array Transport)
-}
+type CredentialDescriptor =
+  { id :: ArrayBuffer
+  , transports :: Maybe (Array Transport)
+  }
 
 encodeCredentialDescriptor :: CredentialDescriptor -> Foreign
 encodeCredentialDescriptor { id, transports } = encodeObject $
-  FO.fromFoldable (Array.catMaybes
-    [ Just ("type" /\ encodeString "public-key")
-    , Just ("id" /\ encodeArrayBuffer id)
-    , map (\ts -> "transports" /\ encodeArray (map encodeTransport ts)) transports
-    ])
+  FO.fromFoldable
+    (Array.catMaybes
+      [ Just ("type" /\ encodeString "public-key")
+      , Just ("id" /\ encodeArrayBuffer id)
+      , map (\ts -> "transports" /\ encodeArray (map encodeTransport ts)) transports
+      ])
 
 data AuthenticatorAttachment = PLATFORM | CROSS_PLATFORM
 
@@ -151,30 +152,31 @@ encodeUserVerification = encodeString <<< case _ of
   PREFERRED -> "preferred"
   DISCOURAGED -> "discouraged"
 
-type AuthenticatorSelection = {
-  authenticatorAttachmentOptional :: Maybe AuthenticatorAttachment,
-  requireResidentKey :: Maybe Boolean,
-  userVerification :: Maybe UserVerification
-}
+type AuthenticatorSelection =
+  { authenticatorAttachmentOptional :: Maybe AuthenticatorAttachment
+  , requireResidentKey :: Maybe Boolean
+  , userVerification :: Maybe UserVerification
+  }
 
 encodeAuthenticatorSelection :: AuthenticatorSelection -> Foreign
 encodeAuthenticatorSelection as = encodeObject $
-  FO.fromFoldable (Array.catMaybes
-    [ map (\i -> "authenticatorAttachmentOptional" /\ encodeAuthenticatorAttachment i) as.authenticatorAttachmentOptional
-    , map (\i -> "requireResidentKey" /\ encodeBoolean i) as.requireResidentKey
-    , map (\i -> "userVerification" /\ encodeUserVerification i) as.userVerification
-    ])
+  FO.fromFoldable
+    (Array.catMaybes
+      [ map (\i -> "authenticatorAttachmentOptional" /\ encodeAuthenticatorAttachment i) as.authenticatorAttachmentOptional
+      , map (\i -> "requireResidentKey" /\ encodeBoolean i) as.requireResidentKey
+      , map (\i -> "userVerification" /\ encodeUserVerification i) as.userVerification
+      ])
 
-type PublicKeyCredentialCreationOptions = {
-  rp :: RelyingParty,
-  user :: User,
-  challenge :: ArrayBuffer,
-  pubKeyCredParams :: Array PublicKeyAlgorithm,
-  timeout :: Maybe Number,
-  excludeCredentials :: Maybe (Array CredentialDescriptor),
-  authenticatorSelection :: Maybe AuthenticatorSelection,
-  attestation :: Maybe Attestation
-}
+type PublicKeyCredentialCreationOptions =
+  { rp :: RelyingParty
+  , user :: User
+  , challenge :: ArrayBuffer
+  , pubKeyCredParams :: Array PublicKeyAlgorithm
+  , timeout :: Maybe Number
+  , excludeCredentials :: Maybe (Array CredentialDescriptor)
+  , authenticatorSelection :: Maybe AuthenticatorSelection
+  , attestation :: Maybe Attestation
+  }
 
 defaultCreationOptions ::
   { rp :: RelyingParty
@@ -196,20 +198,22 @@ defaultCreationOptions { rp, user, challenge, pubKeyCredParams } =
 
 encodeRelyingParty :: RelyingParty -> Foreign
 encodeRelyingParty { icon, id, name } = encodeObject $
-  FO.fromFoldable (Array.catMaybes
-    [ map (\i -> "id" /\ encodeString i) id
-    , Just ("name" /\ encodeString name)
-    , map (\i -> "icon" /\ encodeString i) icon
-    ])
+  FO.fromFoldable
+    (Array.catMaybes
+      [ map (\i -> "id" /\ encodeString i) id
+      , Just ("name" /\ encodeString name)
+      , map (\i -> "icon" /\ encodeString i) icon
+      ])
 
 encodeUser :: User -> Foreign
 encodeUser { icon, id, name, displayName } = encodeObject $
-  FO.fromFoldable (Array.catMaybes
-    [ Just ("id" /\ encodeArrayBuffer id)
-    , Just ("name" /\ encodeString name)
-    , map (\i -> "icon" /\ encodeString i) icon
-    , Just ("displayName" /\ encodeString displayName)
-    ])
+  FO.fromFoldable
+    (Array.catMaybes
+      [ Just ("id" /\ encodeArrayBuffer id)
+      , Just ("name" /\ encodeString name)
+      , map (\i -> "icon" /\ encodeString i) icon
+      , Just ("displayName" /\ encodeString displayName)
+      ])
 
 encodePublicKeyCredentialParam :: PublicKeyAlgorithm -> Foreign
 encodePublicKeyCredentialParam alg = encodeObject $
@@ -220,24 +224,25 @@ encodePublicKeyCredentialParam alg = encodeObject $
 
 encodePublicKeyCredentialCreationOptions :: PublicKeyCredentialCreationOptions -> Foreign
 encodePublicKeyCredentialCreationOptions opts = encodeObject $
-  FO.fromFoldable (Array.catMaybes
-    [ Just ("challenge" /\ encodeArrayBuffer opts.challenge)
-    , Just ("rp" /\ encodeRelyingParty opts.rp)
-    , Just ("user" /\ encodeUser opts.user)
-    , Just ("pubKeyCredParams" /\ encodeArray (map encodePublicKeyCredentialParam opts.pubKeyCredParams))
-    , map (\to -> "timeout" /\ encodeNumber to) opts.timeout
-    , map (\ec -> "excludeCredentials" /\ encodeArray (map encodeCredentialDescriptor ec)) opts.excludeCredentials
-    , map (\as -> "authenticatorSelection" /\ encodeAuthenticatorSelection as) opts.authenticatorSelection
-    , map (\a -> "attestation" /\ encodeAttestation a) opts.attestation
-    ])
+  FO.fromFoldable
+    (Array.catMaybes
+      [ Just ("challenge" /\ encodeArrayBuffer opts.challenge)
+      , Just ("rp" /\ encodeRelyingParty opts.rp)
+      , Just ("user" /\ encodeUser opts.user)
+      , Just ("pubKeyCredParams" /\ encodeArray (map encodePublicKeyCredentialParam opts.pubKeyCredParams))
+      , map (\to -> "timeout" /\ encodeNumber to) opts.timeout
+      , map (\ec -> "excludeCredentials" /\ encodeArray (map encodeCredentialDescriptor ec)) opts.excludeCredentials
+      , map (\as -> "authenticatorSelection" /\ encodeAuthenticatorSelection as) opts.authenticatorSelection
+      , map (\a -> "attestation" /\ encodeAttestation a) opts.attestation
+      ])
 
-type PublicKeyCredentialRequestOptions = {
-  challenge :: ArrayBuffer,
-  timeout :: Maybe Number,
-  rpId :: Maybe String,
-  allowCredentials :: Maybe (Array CredentialDescriptor),
-  userVerification :: Maybe UserVerification
-}
+type PublicKeyCredentialRequestOptions =
+  { challenge :: ArrayBuffer
+  , timeout :: Maybe Number
+  , rpId :: Maybe String
+  , allowCredentials :: Maybe (Array CredentialDescriptor)
+  , userVerification :: Maybe UserVerification
+  }
 
 defaultCredentialRequestOptions :: { challenge :: ArrayBuffer } -> PublicKeyCredentialRequestOptions
 defaultCredentialRequestOptions { challenge } =
@@ -250,42 +255,47 @@ defaultCredentialRequestOptions { challenge } =
 
 encodePublicKeyCredentialRequestOptions :: PublicKeyCredentialRequestOptions -> Foreign
 encodePublicKeyCredentialRequestOptions opts = encodeObject $
-  FO.fromFoldable (Array.catMaybes
-    [ Just ("challenge" /\ encodeArrayBuffer opts.challenge)
-    , map (\to -> "timeout" /\ encodeNumber to) opts.timeout
-    , map (\rpId -> "rpId" /\ encodeString rpId) opts.rpId
-    , map (\ec -> "allowCredentials" /\ encodeArray (map encodeCredentialDescriptor ec)) opts.allowCredentials
-    , map (\uf -> "userVerification" /\ encodeUserVerification uf) opts.userVerification
-    ])
+  FO.fromFoldable
+    (Array.catMaybes
+      [ Just ("challenge" /\ encodeArrayBuffer opts.challenge)
+      , map (\to -> "timeout" /\ encodeNumber to) opts.timeout
+      , map (\rpId -> "rpId" /\ encodeString rpId) opts.rpId
+      , map (\ec -> "allowCredentials" /\ encodeArray (map encodeCredentialDescriptor ec)) opts.allowCredentials
+      , map (\uf -> "userVerification" /\ encodeUserVerification uf) opts.userVerification
+      ])
 
-type AuthenticatorAttestationResponse = {
-  clientDataJSON :: ArrayBuffer,
-  attestationObject :: ArrayBuffer
-}
+type AuthenticatorAttestationResponse =
+  { clientDataJSON :: ArrayBuffer
+  , attestationObject :: ArrayBuffer
+  }
 foreign import getTransportsImpl :: AuthenticatorAttestationResponse -> Array String
 
 getTransports :: AuthenticatorAttestationResponse -> Array Transport
 getTransports = Array.mapMaybe readTransport <<< getTransportsImpl
 
-type AuthenticatorAssertionResponse = {
-  clientDataJSON :: ArrayBuffer,
-  authenticatorData :: ArrayBuffer,
-  signature :: ArrayBuffer,
-  userHandle :: ArrayBuffer
-}
+type AuthenticatorAssertionResponse =
+  { clientDataJSON :: ArrayBuffer
+  , authenticatorData :: ArrayBuffer
+  , signature :: ArrayBuffer
+  , userHandle :: ArrayBuffer
+  }
 
 promiseToAff :: forall a. Effect (Promise a) -> Aff a
 promiseToAff mkPromise = makeAff \cb -> do
   promise <- mkPromise
   promise1 <-
-    Promise.then_ (\c -> do
-      cb (Right c)
-      pure (Promise.resolve unit)) promise
+    Promise.then_
+      (\c -> do
+        cb (Right c)
+        pure (Promise.resolve unit))
+      promise
   _ <-
-    Promise.catch (\rejection -> do
-      let err = fromMaybe (error "Unable to convert rejection to error") (Rejection.toError rejection)
-      cb (Left err)
-      pure (Promise.resolve unit)) promise1
+    Promise.catch
+      (\rejection -> do
+        let err = fromMaybe (error "Unable to convert rejection to error") (Rejection.toError rejection)
+        cb (Left err)
+        pure (Promise.resolve unit))
+      promise1
   pure (effectCanceler (pure unit))
 
 foreign import createImpl ::
