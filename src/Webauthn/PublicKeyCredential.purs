@@ -129,13 +129,13 @@ type CredentialDescriptor =
   }
 
 encodeCredentialDescriptor :: CredentialDescriptor -> Foreign
-encodeCredentialDescriptor { id, transports } = encodeObject $
-  FO.fromFoldable
+encodeCredentialDescriptor { id, transports } = encodeObject
+  (FO.fromFoldable
     (Array.catMaybes
       [ Just ("type" /\ encodeString "public-key")
       , Just ("id" /\ encodeArrayBuffer id)
       , map (\ts -> "transports" /\ encodeArray (map encodeTransport ts)) transports
-      ])
+      ]))
 
 data AuthenticatorAttachment = PLATFORM | CROSS_PLATFORM
 
@@ -159,13 +159,13 @@ type AuthenticatorSelection =
   }
 
 encodeAuthenticatorSelection :: AuthenticatorSelection -> Foreign
-encodeAuthenticatorSelection as = encodeObject $
-  FO.fromFoldable
+encodeAuthenticatorSelection as = encodeObject
+  (FO.fromFoldable
     (Array.catMaybes
       [ map (\i -> "authenticatorAttachmentOptional" /\ encodeAuthenticatorAttachment i) as.authenticatorAttachmentOptional
       , map (\i -> "requireResidentKey" /\ encodeBoolean i) as.requireResidentKey
       , map (\i -> "userVerification" /\ encodeUserVerification i) as.userVerification
-      ])
+      ]))
 
 type PublicKeyCredentialCreationOptions =
   { rp :: RelyingParty
@@ -197,34 +197,34 @@ defaultCreationOptions { rp, user, challenge, pubKeyCredParams } =
   }
 
 encodeRelyingParty :: RelyingParty -> Foreign
-encodeRelyingParty { icon, id, name } = encodeObject $
-  FO.fromFoldable
+encodeRelyingParty { icon, id, name } = encodeObject
+  (FO.fromFoldable
     (Array.catMaybes
       [ map (\i -> "id" /\ encodeString i) id
       , Just ("name" /\ encodeString name)
       , map (\i -> "icon" /\ encodeString i) icon
-      ])
+      ]))
 
 encodeUser :: User -> Foreign
-encodeUser { icon, id, name, displayName } = encodeObject $
-  FO.fromFoldable
+encodeUser { icon, id, name, displayName } = encodeObject
+  (FO.fromFoldable
     (Array.catMaybes
       [ Just ("id" /\ encodeArrayBuffer id)
       , Just ("name" /\ encodeString name)
       , map (\i -> "icon" /\ encodeString i) icon
       , Just ("displayName" /\ encodeString displayName)
-      ])
+      ]))
 
 encodePublicKeyCredentialParam :: PublicKeyAlgorithm -> Foreign
-encodePublicKeyCredentialParam alg = encodeObject $
-  FO.fromFoldable
+encodePublicKeyCredentialParam alg = encodeObject
+  (FO.fromFoldable
     [ "type" /\ encodeString "public-key"
     , "alg" /\ encodeAlg alg
-    ]
+    ])
 
 encodePublicKeyCredentialCreationOptions :: PublicKeyCredentialCreationOptions -> Foreign
-encodePublicKeyCredentialCreationOptions opts = encodeObject $
-  FO.fromFoldable
+encodePublicKeyCredentialCreationOptions opts = encodeObject
+  (FO.fromFoldable
     (Array.catMaybes
       [ Just ("challenge" /\ encodeArrayBuffer opts.challenge)
       , Just ("rp" /\ encodeRelyingParty opts.rp)
@@ -234,7 +234,7 @@ encodePublicKeyCredentialCreationOptions opts = encodeObject $
       , map (\ec -> "excludeCredentials" /\ encodeArray (map encodeCredentialDescriptor ec)) opts.excludeCredentials
       , map (\as -> "authenticatorSelection" /\ encodeAuthenticatorSelection as) opts.authenticatorSelection
       , map (\a -> "attestation" /\ encodeAttestation a) opts.attestation
-      ])
+      ]))
 
 type PublicKeyCredentialRequestOptions =
   { challenge :: ArrayBuffer
@@ -254,15 +254,15 @@ defaultCredentialRequestOptions { challenge } =
   }
 
 encodePublicKeyCredentialRequestOptions :: PublicKeyCredentialRequestOptions -> Foreign
-encodePublicKeyCredentialRequestOptions opts = encodeObject $
-  FO.fromFoldable
+encodePublicKeyCredentialRequestOptions opts = encodeObject
+  (FO.fromFoldable
     (Array.catMaybes
       [ Just ("challenge" /\ encodeArrayBuffer opts.challenge)
       , map (\to -> "timeout" /\ encodeNumber to) opts.timeout
       , map (\rpId -> "rpId" /\ encodeString rpId) opts.rpId
       , map (\ec -> "allowCredentials" /\ encodeArray (map encodeCredentialDescriptor ec)) opts.allowCredentials
       , map (\uf -> "userVerification" /\ encodeUserVerification uf) opts.userVerification
-      ])
+      ]))
 
 type AuthenticatorAttestationResponse =
   { clientDataJSON :: ArrayBuffer
@@ -271,7 +271,7 @@ type AuthenticatorAttestationResponse =
 foreign import getTransportsImpl :: AuthenticatorAttestationResponse -> Array String
 
 getTransports :: AuthenticatorAttestationResponse -> Array Transport
-getTransports = Array.mapMaybe readTransport <<< getTransportsImpl
+getTransports resp = Array.mapMaybe readTransport (getTransportsImpl resp)
 
 type AuthenticatorAssertionResponse =
   { clientDataJSON :: ArrayBuffer
@@ -303,20 +303,20 @@ foreign import createImpl ::
     Foreign
     (Promise (PublicKeyCredential AuthenticatorAttestationResponse))
 create :: PublicKeyCredentialCreationOptions -> Aff (PublicKeyCredential AuthenticatorAttestationResponse)
-create options = promiseToAff $
-  runEffectFn1
+create options = promiseToAff
+  (runEffectFn1
     createImpl
-    (encodeObject (FO.singleton "publicKey" (encodePublicKeyCredentialCreationOptions options)))
+    (encodeObject (FO.singleton "publicKey" (encodePublicKeyCredentialCreationOptions options))))
 
 foreign import getImpl ::
   EffectFn1
     Foreign
     (Promise (PublicKeyCredential AuthenticatorAssertionResponse))
 get :: PublicKeyCredentialRequestOptions -> Aff (PublicKeyCredential AuthenticatorAssertionResponse)
-get options = promiseToAff $
-  runEffectFn1
+get options = promiseToAff
+  (runEffectFn1
     getImpl
-    (encodeObject (FO.singleton "publicKey" (encodePublicKeyCredentialRequestOptions options)))
+    (encodeObject (FO.singleton "publicKey" (encodePublicKeyCredentialRequestOptions options))))
 
 foreign import isUserVerifyingPlatformAuthenticatorAvailableImpl :: Effect (Promise Boolean)
 isUserVerifyingPlatformAuthenticatorAvailable :: Aff Boolean
